@@ -10,6 +10,7 @@ library(tidyverse)
 library(p8105.datasets)
 library(ggplot2)
 library(ggridges)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Problem 1
@@ -146,7 +147,8 @@ brfss_ex <- brfss|>
   geom_line() +
   labs(title = "average value over time within a state",
        x = "year",
-       y = "average data value") 
+       y = "average data value") +
+  theme_minimal()
 brfss_ex
 ```
 ```{r}
@@ -158,8 +160,91 @@ brfss_pl <- brfss|>
   filter(state == "NY")|>
   # make plot 
   ggplot(aes(data_value, response))+
-  facet_wrap(~ year, ncol = 2) +
-  geom_density_ridges(scale=1)
+  facet_grid(~ year) +
+  geom_density_ridges(scale=1)+
+  labs(title = "distribution of data_value for responses (“Poor” to “Excellent”) in NY")+
+  theme_minimal()
 brfss_pl
 ```
 
+
+# Problem 3
+```{r}
+# import data
+covar <- read.csv("./data/nhanes_covar.csv",skip = 4,header = TRUE)
+accel <- read.csv("./data/nhanes_accel.csv")
+# clean data
+covar <- covar|>
+  # exclude participants less than 21
+  filter(age>=21)|>
+  # exclude participants with missing demographic data;
+  na.omit()|>
+  # encode data with reasonable variable classes 
+  mutate(sex = if_else(sex==1, "male", "female"))|>
+  mutate(education = case_when(education == 1 ~ "less than high school",
+                               education == 2 ~ "high school equivalent",
+                               education == 3 ~ "more than high school"))|>
+  mutate(sex = factor(sex, levels= c("male", "female")))|>
+  mutate(education = factor(education, levels = c("less than high school", "high school equivalent","more than high school")))
+# merge data
+merged <- inner_join(covar, accel, by = "SEQN")
+merged <- merged|>
+  janitor::clean_names()
+# make it to a long format
+merged_long <- pivot_longer(merged,
+                            min1:min1440,
+                            names_to = "time",
+                            values_to = "mim")
+```
+
+```{r}
+# make table for the number of men and women in each education category
+edu <- merged|>
+  group_by(sex, education)|>
+  summarise(num = n(), .groups = "keep")|>
+  spread(sex, num)
+edu
+```
+
+```{r}
+# create a visualization of the age distributions for men and women in each education category
+age_edu <- merged|>
+  ggplot(aes(x = age, y = education, fill = sex))+
+  geom_density_ridges(scale = 0.5, alpha = 0.5)+
+  labs(title = "age distributions for men and women in each education category")+
+  theme_minimal()
+age_edu
+```
+
+```{r}
+total_act <- merged_long|>
+  group_by(seqn, sex, age, education)|>
+  # create a total activity variable for each participant
+  summarise(total= sum(mim), .groups = "keep")|>
+  # plot activities
+  ggplot(aes(x = age, y = total, color = sex))+
+  geom_point(alpha = 0.5)+
+  facet_grid(~ education) +
+  # add trend line
+  geom_smooth(se = FALSE) + 
+  labs(title = "age distributions for men and women in each education category",
+       y = "total activity")+
+  theme_minimal()
+total_act
+```
+
+```{r}
+# create a visualization of the age distributions for men and women in each education category
+act_24 <- merged_long|>
+  mutate(time = as.numeric(gsub("min", "", time)))|>
+  arrange(time)|>
+  ggplot(aes(x = time, y = mim, color = sex))+
+  geom_point(alpha = 0.5)+
+  facet_grid(~ education) +
+  # add trend line
+  geom_smooth(se = FALSE) + 
+  labs(title = "24-hour activity time courses for each education level",
+       y = "total activity")+
+  theme_minimal()
+act_24
+```
