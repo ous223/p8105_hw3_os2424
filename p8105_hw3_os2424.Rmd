@@ -2,10 +2,92 @@
 title: "p8105_hw3_os2424"
 author: "Ou Sha"
 date: "2023-10-14"
-output: git_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
-
+library(tidyverse)
+library(p8105.datasets)
+library(ggplot2)
 ```
 
+# Problem 1
+```{r}
+data("instacart")
+```
+The dataset has `r nrow(instacart)` observations of `r instacart |> select(user_id) |> distinct() |> count()` unique users. \
+There are `r ncol(instacart)` columns:\
+`order_id`: order identifier\
+`product_id`: product identifier\
+`add_to_cart_order`: order in which each product was added to cart\
+`reordered`: 1 - reorder; 0 - otherwise\
+`user_id`: customer identifier\
+`eval_set`: which evaluation set this order belongs in\
+`order_number`: the order sequence number for this user (1=first, n=nth)\
+`order_dow`: the day of the week on which the order was placed\
+`order_hour_of_day`: the hour of the day on which the order was placed\
+`days_since_prior_order`: days since the last order, capped at 30, NA if order_number=1\
+`product_name`: name of the product, such as spring water, asparagus etc.\
+`aisle_id`: aisle identifier\
+`department_id`: department identifier\
+`aisle`: the name of the aisle, such as yogurt, cream etc\
+`department`: the name of the department, such as produce, dairy eggs etc.
+
+```{r}
+# count aisles number
+aisles <- instacart |>
+  group_by(aisle)|>
+  summarise(aisle_num = n())|>
+  # order in ordered number to find most ordered aisles
+  arrange(desc(aisle_num))
+```
+There are `r nrow(aisles)` aisles are there. The most ordered items are `r aisles|> head(1)`.\
+
+```{r}
+aisles_plot <- aisles |>
+  # filter aisles w/ more than 10000 items
+  filter(aisle_num > 10000)|>
+  # make plot
+  ggplot(aes(reorder(aisle, aisle_num), aisle_num))+
+  coord_flip()+
+  geom_point(stat = "identity") + 
+  labs(title = "Number of items ordered in each aisle",
+       x = "aisles",
+       y = "number of order") +
+  theme_minimal()
+aisles_plot
+ggsave("P1 Number of items ordered in each aisle.png", plot = last_plot())
+```
+```{r}
+popular_aisle <- instacart|>
+  # find items in these 3 aisles
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits"))|>
+  group_by(aisle, product_name)|>
+  summarise(order_num = n(), .groups = "keep")|>
+  # order all the items in ordered number
+  arrange(aisle, desc(order_num))|>
+  group_by(aisle)|>
+  # showing the three most popular
+  slice_head(n=3)
+popular_aisle
+```
+
+```{r}
+mean_hr <- instacart|>
+  # find items 
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream"))|>
+  group_by(product_name, order_dow)|>
+  # find the mean hour of the day
+  summarise(mean_hour = mean(order_hour_of_day), .groups = "keep")|>
+  # make the day variable clear to read
+  mutate(order_dow = case_when(order_dow == 0 ~ "Sunday", 
+                               order_dow == 1 ~ "Monday",
+                               order_dow == 2 ~ "Tuesday",
+                               order_dow == 3 ~ "Wednesday",
+                               order_dow == 4 ~ "Thursday",
+                               order_dow == 5 ~ "Friday",
+                               order_dow == 6 ~ "Saturday",))|>
+  # make the 2*7 table
+  spread(order_dow, mean_hour)
+mean_hr
+```
