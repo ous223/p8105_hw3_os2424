@@ -60,6 +60,7 @@ aisles_plot <- aisles |>
 aisles_plot
 ggsave("P1 Number of items ordered in each aisle.png", plot = last_plot())
 ```
+Based on the plot, fresh vegetables and fresh fruits are significantly the most popular aisles. Dairy products such as yogurt, milk, and cheese have a higher number of order in general. 
 ```{r}
 popular_aisle <- instacart|>
   # find items in these 3 aisles
@@ -73,7 +74,7 @@ popular_aisle <- instacart|>
   slice_head(n=3)
 popular_aisle
 ```
-
+Based on the result, the top 3 popular items in baking ingredients are `light brown sugar`, `pure baking soda`, and `cane sugar`. The top 3 popular items in dog food care are `Snack Sticks Chicken & Rice Recipe Dog Treats`, `Organix Chicken & Brown Rice Recipe`, and `Small Dog Biscuits`. The top 3 popular items in packaged vegetables fruits are `Organic Baby Spinach`, `Organic Raspberries`, and `Organic Blueberries`. 
 ```{r}
 mean_hr <- instacart|>
   # find items 
@@ -81,18 +82,13 @@ mean_hr <- instacart|>
   group_by(product_name, order_dow)|>
   # find the mean hour of the day
   summarise(mean_hour = mean(order_hour_of_day), .groups = "keep")|>
-  # make the day variable clear to read
-  mutate(order_dow = case_when(order_dow == 0 ~ "Sunday", 
-                               order_dow == 1 ~ "Monday",
-                               order_dow == 2 ~ "Tuesday",
-                               order_dow == 3 ~ "Wednesday",
-                               order_dow == 4 ~ "Thursday",
-                               order_dow == 5 ~ "Friday",
-                               order_dow == 6 ~ "Saturday",))|>
+  arrange(order_dow)|>
   # make the 2*7 table
   spread(order_dow, mean_hour)
 mean_hr
 ```
+To make this table, we filter out the two aisles first and then calculate the mean hour of day.\
+Based on the result, the mean hour of the day at which coffee ice cream is ordered is slightly larger than the mean hour of the dat at which pink lady apples is ordered in general. 
 
 # Problem 2
 ```{r}
@@ -133,7 +129,8 @@ brfss_2010 <- brfss|>
   # filer 7 or more locations
   filter(loc_num >= 7)
 ```
-In 2010, states `r pull(brfss_2010, state)` were observed at 7 or more locations.
+In 2010, states `r pull(brfss_2010, state)` were observed at 7 or more locations.\
+In 2002, `r nrow(brfss_2002)` states were observed at 7 or more locations. In 2010, `r nrow(brfss_2010)` states were observed at 7 or more locations. There are more states that were observed at 7 or more locations in 2010. 
 ```{r}
 # Construct a dataset that is limited to Excellent responses
 brfss_ex <- brfss|>
@@ -151,6 +148,7 @@ brfss_ex <- brfss|>
   theme_minimal()
 brfss_ex
 ```
+Based on the result, there is no obvious trend observed. The average value over time within a state fluctuate.
 ```{r}
 # Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State
 brfss_pl <- brfss|>
@@ -162,10 +160,11 @@ brfss_pl <- brfss|>
   ggplot(aes(data_value, response))+
   facet_grid(~ year) +
   geom_density_ridges(scale=1)+
-  labs(title = "distribution of data_value for responses (“Poor” to “Excellent”) in NY")+
+  labs(title = "distribution of data value for responses (“Poor” to “Excellent”) in NY")+
   theme_minimal()
 brfss_pl
 ```
+Data value for reponses are similar in 2006 and 2010. Data value of response "excellent", "very good" increase slightly while the one of response "poor" keeps the same and the one of "fair" decreases. 
 
 
 # Problem 3
@@ -205,7 +204,7 @@ edu <- merged|>
   spread(sex, num)
 edu
 ```
-
+There are no significant differences between the numbers of males and females at education level less than high school and more than high school. When the education level is at high school equivalent, there are more males at this level. 
 ```{r}
 # create a visualization of the age distributions for men and women in each education category
 age_edu <- merged|>
@@ -215,7 +214,9 @@ age_edu <- merged|>
   theme_minimal()
 age_edu
 ```
-
+The age for men and women at education level of more than high school are almost the same. There is no significant difference at this level.\
+The age for men at education level of high school equivalent is smaller than the one for women in general based on the plot (distribution plot for female is left skewed).\
+The age for men and women at education level of less than high school are almost the same. There is no significant difference at this level.\
 ```{r}
 total_act <- merged_long|>
   group_by(seqn, sex, age, education)|>
@@ -232,6 +233,8 @@ total_act <- merged_long|>
   theme_minimal()
 total_act
 ```
+At education level of high school equivalent and more than high school, the total activity of female are larger than the ones of male among the ages from 21 to 80. At education level of less than high school, the total activity of male is smaller the one of female at ages from 20 to 45. For ages from 45 to 80 at education level of less than high school, the total activity of male is larger than the one of female.\
+In general, the total activity of male and female follow similar tendency at each different education levels. 
 
 ```{r}
 # create a visualization of the age distributions for men and women in each education category
@@ -248,3 +251,4 @@ act_24 <- merged_long|>
   theme_minimal()
 act_24
 ```
+Based on the plot, the smooth line of 24-hr activity for male and female are almost the same among the three education levels. The tendency among the three education levels are similar. Based on the plot, there is no significant differences among 24hr total activity for male and female in general. 
